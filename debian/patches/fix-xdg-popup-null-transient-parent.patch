@@ -1,0 +1,28 @@
+Description: Fix crash when popup window has null transientParent
+ The patch fix-set-lastInputDevice-on-pointer-and-keyboard-enter.patch
+ accidentally removed the transientParent guard along with the
+ lastInputDevice() guard from the Qt::Popup branch in
+ QWaylandXdgSurface constructor. This causes a null pointer
+ dereference in QWaylandXdgSurface::createPositioner() when a
+ Qt::Popup window has no transientParent (e.g. QCompleter popup,
+ QTBUG-130474).
+ .
+ This patch restores the transientParent guard while keeping the
+ lastInputDevice() guard removed as intended by the original patch.
+Origin: vendor
+Bug: https://pms.uniontech.com/bug-view-380865.html
+Forwarded: not-needed
+
+Index: qt6-wayland/src/plugins/shellintegration/xdg-shell/qwaylandxdgshell.cpp
+===================================================================
+--- qt6-wayland.orig/src/plugins/shellintegration/xdg-shell/qwaylandxdgshell.cpp
++++ qt6-wayland/src/plugins/shellintegration/xdg-shell/qwaylandxdgshell.cpp
+@@ -314,7 +314,7 @@ QWaylandXdgSurface::QWaylandXdgSurface(Q
+ 
+     if (type == Qt::ToolTip && transientParent) {
+         setPopup(transientParent);
+-    } else if (type == Qt::Popup) {
++    } else if (type == Qt::Popup && transientParent) {
+         setGrabPopup(transientParent, display->lastInputDevice(), display->lastInputSerial());
+     } else {
+         setToplevel();
